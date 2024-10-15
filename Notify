@@ -4,7 +4,7 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
 local Player = Players.LocalPlayer
-local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 ScreenGui.Name = "NotificationUI"
 ScreenGui.ResetOnSpawn = false
 

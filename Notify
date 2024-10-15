@@ -1,0 +1,118 @@
+local NotificationModule = {}
+
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+local Player = Players.LocalPlayer
+local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "NotificationUI"
+ScreenGui.ResetOnSpawn = false
+
+local NotificationSize = UDim2.new(0, 250, 0, 24)
+local SmallSize = UDim2.new(0, 0, 0, 24)
+local BackgroundColor = Color3.fromRGB(17, 17, 17)
+local NotificationPadding = 7
+
+local Notifications = {}
+
+local ColorMap = {
+	MISS = { Color3.fromRGB(255, 0, 0), Color3.fromRGB(125, 0, 0) },
+	HIT = { Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 125, 0) },
+	ERROR = { Color3.fromRGB(128, 0, 0), Color3.fromRGB(64, 0, 0) },
+	INFO = { Color3.fromRGB(255, 165, 0), Color3.fromRGB(255, 100, 0) }
+}
+
+local function FitTextToLabel(Label)
+	local MinSize, MaxSize = 10, 16
+	for Size = MaxSize, MinSize, -1 do
+		Label.TextSize = Size
+		if Label.TextFits then
+			break
+		end
+	end
+end
+
+local function CreateNotification(NotificationType, Message, Duration)
+	local GradientColor1, GradientColor2 = unpack(ColorMap[NotificationType])
+
+	local Frame = Instance.new("Frame")
+	Frame.Size = SmallSize
+	Frame.BackgroundColor3 = BackgroundColor
+	Frame.BorderSizePixel = 0
+	Frame.ClipsDescendants = true
+	Frame.Parent = ScreenGui
+
+	Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	Frame.Position = UDim2.new(0, 10 + NotificationSize.X.Offset / 2, 0, 10 + (#Notifications * (NotificationSize.Y.Offset + NotificationPadding)))
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 0
+	Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	Stroke.Parent = Frame
+	Stroke.Color = Color3.fromRGB(255, 255, 255)
+
+	local Gradient = Instance.new("UIGradient")
+	Gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, GradientColor1),
+		ColorSequenceKeypoint.new(1, GradientColor2)
+	})
+	Gradient.Rotation = 0
+	Gradient.Parent = Stroke
+
+	local TweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+	TweenService:Create(Gradient, TweenInfo, { Rotation = 360 }):Play()
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -10, 1, 0)
+	Label.Position = UDim2.new(0, 5, 0, 0)
+	Label.BackgroundTransparency = 1
+	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Label.RichText = true
+	Label.Text = Message
+	Label.FontFace = Font.fromId(12187371840, Enum.FontWeight.Thin, Enum.FontStyle.Normal)
+	Label.TextScaled = false
+	Label.TextWrapped = false
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Center
+	Label.Parent = Frame
+
+	FitTextToLabel(Label)
+
+	local SizeTween = TweenService:Create(Frame, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), { Size = NotificationSize })
+	local SizeTween2 = TweenService:Create(Stroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), { Thickness = 1 })
+	SizeTween:Play()
+	SizeTween2:Play()
+
+	Frame.Position = UDim2.new(0, 10 + (NotificationSize.X.Offset / 2), 0, 10 + (#Notifications * (NotificationSize.Y.Offset + NotificationPadding)))
+
+	table.insert(Notifications, Frame)
+
+	task.delay(Duration or 3, function()
+		local ShrinkTween = TweenService:Create(Frame, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), { Size = SmallSize })
+		ShrinkTween:Play()
+		local ShrinkTween2 = TweenService:Create(Stroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), { Thickness = 0 })
+		ShrinkTween2:Play()
+
+		ShrinkTween.Completed:Wait()
+		task.wait(0.12)
+
+		for i, Notif in ipairs(Notifications) do
+			if Notif == Frame then
+				continue
+			end
+			local NewPos = UDim2.new(0, 10 + NotificationSize.X.Offset / 2, 0, 10 + ((i - 1) * (NotificationSize.Y.Offset + NotificationPadding)))
+			local MoveTween = TweenService:Create(Notif, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), { Position = NewPos })
+			MoveTween:Play()
+		end
+
+		Frame:Destroy()
+		table.remove(Notifications, table.find(Notifications, Frame))
+	end)
+end
+
+function NotificationModule:Notify(NotificationType, Message, Duration)
+	CreateNotification(NotificationType, Message, Duration)
+end
+
+return NotificationModule

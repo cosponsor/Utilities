@@ -1,3 +1,42 @@
+local function createFont(name, weight: Enum.FontWeight, data)
+    local path = `fonts/{name}`
+
+    if not (makefolder and isfolder and writefile and getcustomasset) then 
+        warn("Your executor does not support required functions.")
+        return 
+    end
+
+    if not isfolder('fonts') then 
+        makefolder('fonts') 
+    end
+
+    if not isfile(`{path}.ttf`) then 
+        writefile(`{path}.ttf`, data) 
+    end
+
+    local json = {
+        ['name'] = name,
+        ['faces'] = {
+            { 
+                ['name'] = 'Regular', 
+                ['weight'] = 400, 
+                ['style'] = 'normal', 
+                ['assetId'] = getcustomasset(`{path}.ttf`)
+            }
+        }
+    }
+
+    if not isfile(`{path}.json`) then
+        writefile(`{path}.json`, game:GetService("HttpService"):JSONEncode(json))
+    end
+
+    return Font.new(getcustomasset(`{path}.json`), weight)
+end
+
+local Fonts = {
+	Minecraftia = createFont("Minecraftia",  Enum.FontWeight.Regular, game:HttpGet("https://github.com/cosponsor/x/raw/refs/heads/main/Minecraftia-Regular.ttf"))
+}
+
 local NotificationModule = {}
 
 local TweenService = game:GetService("TweenService")
@@ -69,7 +108,7 @@ local function CreateNotification(NotificationType, Message, Duration)
 	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Label.RichText = true
 	Label.Text = Message
-	Label.FontFace = Font.fromId(12187371840, Enum.FontWeight.Thin, Enum.FontStyle.Normal)
+	Label.FontFace = Fonts.Minecraftia or Font.fromId(12187371840, Enum.FontWeight.Thin, Enum.FontStyle.Normal)
 	Label.TextScaled = false
 	Label.TextWrapped = false
 	Label.TextTruncate = Enum.TextTruncate.AtEnd
